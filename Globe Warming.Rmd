@@ -1,0 +1,97 @@
+---
+title: "globe warming"
+author: "Lin Zhou"
+date: "2020/9/25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+  Globe warming has become a hot topic during recent years. To find out whether the temperature has risen year by year, our project aims at exploring the relationship between time and temperature. 
+  The goal of our project is to explore the relationships between air/water temperatures and time measured by a single weather buoy in the NOAA National Data Buoy Center through recent 30 years. Such kind of relationship can show somewhat evidence of global warming, or at least warming trend in this area. The focus of our project is build data set for information we have already known and make appropriate analysis.
+
+## Collecting, Organizing and Exploring the Data
+
+  The first and most important thing we need do is to acquire and collect data from related website. Accurate and high quality data plays a crucial role in our project to achieve our goal as it is the base of data modeling, then decision making. The data we use in our project is NOAA weather buoy Data from the National Data Buoy Center website. "https://www.ndbc.noaa.gov/station_page.php?station=44013"
+
+```{r}
+#import dataset
+datax <- read.csv("MR_DATE.csv")
+#select 14:00 as fixed time
+data1 <- datax[grep(pattern = "14:00:00",datax[,1]),]
+#choose august as observation month
+data08 <- data1[grep(pattern = "-08-",data1[,1]),]
+data08x <- data.frame(data08$DATETIME,data08$ATMP)
+data08x1 <- data08x[data08x[,2]<100,]
+#function to get average temperature of august
+meanx <- function(x){
+  v <-data08x1[grep(pattern = x,data08x1[,1]),]
+  m <- mean(v[,2])
+  return(m)
+}
+years <- vector()
+temperatures <- vector()
+#create data set for valid data
+for(i in 1988:2016){
+  years <- append(years,i)
+  temperatures <- append(temperatures,meanx(i))
+}
+validdata <- data.frame(Year = years, Temperature = temperatures)
+#modify the typo data
+validdata[11,"Temperature"] <- meanx(3898)
+```
+
+  After pulling data from the website, we might be supposed to choose and clean the data set to make it suitable for the analysis. First and foremost, the variable temperature can not be compared unless they are on the same timing. Thus, we need to control variables. What we do is to choose the exactly timing(14:00) everyday in august which is usually the hottest month among the year to record the data. Similarly, we can not fit and plot the model if we simply put all the points in august from different years together because we can not distinguish whether it is day-day comparison or year-year comparison. If we make comparison between specific day each year, the result should also be insignificant because the temperatures fluctuates day by day even they are on the same timing. As a result, from my perspective, the data would be more representative and comparable if we calculate the mean temperature of august each year and then compare them year by year. To do this, I use the for loop function in R to add every calculated mean value to the vector. Then I combine it with the variable year to a new data frame called valid data.
+  
+```{r}
+data07 <- data1[grep(pattern = "-07-",data1[,1]),]
+data07x <- data.frame(data07$DATETIME,data07$ATMP)
+data07x1 <- data07x[data07x[,2]<100,]
+#function to get average temperature of July
+meany <- function(x){
+  v2 <-data07x1[grep(pattern = x,data07x1[,1]),]
+  m2 <- mean(v2[,2])
+  return(m2)
+}
+years2 <- vector()
+temperatures2 <- vector()
+#create data set for valid data
+for(i in 1988:2016){
+  years2 <- append(years2,i)
+  temperatures2 <- append(temperatures2,meany(i))
+}
+validdata2 <- data.frame(Year = years2, Temperature = temperatures2)
+#modify the typo data
+validdata2[11,"Temperature"] <- meany(3898)
+```
+
+  To make the analysis become more inclusive and reliable, we also collect and clean the data of 14:00 mean temperature every July each year. The process is almost the same as we did in calculating that of August.
+  
+## Data Visualization
+
+```{r}
+#fit the model
+fit1 <- lm(data = validdata, validdata$Temperature ~ validdata$Year)
+print(fit1)
+summary(fit1)
+plot(fit1)
+plot(validdata$Year,validdata$Temperature,main = "Warming trend", xlab = "year", ylab = "mean temperature of August")
+abline(coef(fit1)[1],coef(fit1)[2])
+#fit the model
+fit2 <- lm(data = validdata2, validdata2$Temperature ~ validdata2$Year,main = "Warming trend", xlab = "year", ylab = "mean temperature of July")
+print(fit2)
+summary(fit2)
+plot(validdata2$Year,validdata2$Temperature)
+abline(coef(fit2)[1],coef(fit2)[2])
+plot(fit2)
+```
+  Above are the two graphs with scatter points and fitted lines on them. For the August one, first we plot the scatter points with year on xlab and mean temperature on ylab. To make the graph become more comparable, we use the lm() function in R to fit the linear regression model. After fitting the linear model, we check the linearity, independence, normality, equal variance assumptions From the model, the slope is 0.0143 which is greater than 0. It indicates that the temperature is increasing year by year. However, the p-value is relatively large, which means we can not reject the null hypothesis. It still has chance that there does not exist relationship between temperatures and years which means the fitted line would be a horizontal line.
+  Similarly, we do the same thing for the July data and the conclusion are almost the same.
+  
+## Conclusion
+
+  In conclusion, from the data we collect and from the plot we create, there might be some evidence of globe warming, or at least, warming trend in this area. To become more confident to substantiate the globe warming, more data from more places are needed.
